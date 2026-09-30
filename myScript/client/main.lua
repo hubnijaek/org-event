@@ -1,3 +1,19 @@
+
+bindKey(
+    "e",
+    "down",
+    function()
+
+        triggerServerEvent(
+            "shipment:requestStart",
+            localPlayer
+        )
+
+    end
+)
+
+
+
 addEvent(
     "shipment:stateChanged",
     true
