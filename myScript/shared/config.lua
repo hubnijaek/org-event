@@ -1,24 +1,25 @@
 ShipmentConfig = {
 
-    duration = 45 * 60 * 1000,
     testMode = true,
+
+    duration = 45 * 60 * 1000,
+
     cooldown = 3 * 60 * 60 * 1000,
 
-    minimumGangMembers = 3,
-    minimumLEO = 5,
-
     vehicles = {
+
         {
-            model = 456, -- Yankee
+            model = 456,
             name = "Yankee",
             capacity = 12
         },
 
         {
-            model = 482, -- Burrito
+            model = 482,
             name = "Burrito",
             capacity = 8
         }
+
     },
 
     cargoTypes = {
@@ -30,8 +31,11 @@ ShipmentConfig = {
     crateObjectModel = 1271,
 
     testLocations = {
+
         pickup = nil,
+
         destination = nil
+
     }
 
-}   
+}
