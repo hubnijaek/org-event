@@ -2,87 +2,219 @@ ActiveShipment = nil
 
 local shipmentID = 0
 local cooldownEndsAt = 0
+local expirationTimer = nil
+local endingShipment = false
 
-function resetShipmentCooldown()
-    cooldownEndsAt = 0
-    outputDebugString(
-        "[SHIPMENT] Shipment cooldown reset."
-    )
-    return true
-end
 
+--------------------------------------------------
 -- GET ACTIVE SHIPMENT
+--------------------------------------------------
 
 function getActiveShipment()
+
     return ActiveShipment
+
 end
 
 
--- CHECK IF EVENT IS ON COOLDOWN
+--------------------------------------------------
+-- COOLDOWN
+--------------------------------------------------
 
 function isShipmentOnCooldown()
+
     return getTickCount() < cooldownEndsAt
+
 end
 
 
--- GET REMAINING COOLDOWN
-
 function getShipmentCooldownRemaining()
+
     if not isShipmentOnCooldown() then
         return 0
     end
 
     return cooldownEndsAt - getTickCount()
+
 end
 
 
--- CREATE RANDOM CARGO
+function resetShipmentCooldown()
+
+    cooldownEndsAt = 0
+
+    outputDebugString(
+        "[SHIPMENT] Cooldown reset."
+    )
+
+end
+
+
+--------------------------------------------------
+-- RANDOM CARGO
+--------------------------------------------------
 
 local function generateCargo(amount)
+
     local crates = {}
 
     for i = 1, amount do
 
-        local randomType = ShipmentConfig.cargoTypes[
-            math.random(1, #ShipmentConfig.cargoTypes)
-        ]
+        local cargoType =
+            ShipmentConfig.cargoTypes[
+                math.random(
+                    1,
+                    #ShipmentConfig.cargoTypes
+                )
+            ]
 
         crates[i] = {
+
             id = i,
-            type = randomType
+
+            type = cargoType
+
         }
+
     end
 
     return crates
+
 end
 
 
--- CREATE SHIPMENT
+--------------------------------------------------
+-- SHIPMENT EXPIRATION
+--------------------------------------------------
 
-function createShipment(organization)
-    if ActiveShipment then
-        return false, "There is already an active shipment."
+local function shipmentExpired()
+
+    if not ActiveShipment then
+        return
     end
+
+    outputDebugString(
+        "[SHIPMENT] Shipment #"
+        .. ActiveShipment.id
+        .. " expired."
+    )
+
+    setShipmentState("expired")
+
+    destroyShipment(
+        "Shipment time expired."
+    )
+
+end
+
+
+--------------------------------------------------
+-- VEHICLE DESTROYED
+--------------------------------------------------
+
+local function onShipmentVehicleDestroy()
+
+    if not ActiveShipment then
+        return
+    end
+
+    if endingShipment then
+        return
+    end
+
+    if ActiveShipment.vehicle.element ~= source then
+        return
+    end
+
+    outputDebugString(
+        "[SHIPMENT] Shipment vehicle was destroyed."
+    )
+
+    setShipmentState("destroyed")
+
+    destroyShipment(
+        "Shipment vehicle destroyed."
+    )
+
+end
+
+
+--------------------------------------------------
+-- CREATE SHIPMENT
+--------------------------------------------------
+
+function createShipment()
+
+    if ActiveShipment then
+
+        return false,
+            "There is already an active shipment."
+
+    end
+
 
     if isShipmentOnCooldown() then
-        return false, "The illegal shipment event is on cooldown."
+
+        return false,
+            "The illegal shipment event is on cooldown."
+
     end
+
+
+    if not ShipmentConfig.testMode then
+
+        return false,
+            "Test mode is disabled."
+
+    end
+
+
+    local pickup =
+        ShipmentConfig.testLocations.pickup
+
+
+    local destination =
+        ShipmentConfig.testLocations.destination
+
+
+    if not pickup then
+
+        return false,
+            "Pickup location has not been set."
+
+    end
+
+
+    if not destination then
+
+        return false,
+            "Destination location has not been set."
+
+    end
+
 
     shipmentID = shipmentID + 1
 
 
+    --------------------------------------------------
     -- RANDOM VEHICLE
+    --------------------------------------------------
 
-
-    local vehicleConfig = ShipmentConfig.vehicles[
-        math.random(1, #ShipmentConfig.vehicles)
-    ]
-
-
-    -- CREATE SHIPMENT DATA
+    local vehicleConfig =
+        ShipmentConfig.vehicles[
+            math.random(
+                1,
+                #ShipmentConfig.vehicles
+            )
+        ]
 
 
     local now = getTickCount()
+
+
+    --------------------------------------------------
+    -- CREATE SHIPMENT DATA
+    --------------------------------------------------
 
     ActiveShipment = {
 
@@ -90,209 +222,113 @@ function createShipment(organization)
 
         state = "created",
 
-    
-        -- ORIGINAL ORGANIZATION
-    
-
-        initiator = {
-            organizationId = organization.id,
-            organizationName = organization.name
-        },
-
-    
-        -- CURRENT OWNER
-    
-
-        currentOwner = {
-            type = "organization",
-            organizationId = organization.id,
-            organizationName = organization.name
-        },
-
-    
-        -- VEHICLE
-    
-
         vehicle = {
-            model = vehicleConfig.model,
-            name = vehicleConfig.name,
-            capacity = vehicleConfig.capacity,
-            element = nil
-        },
 
-    
-        -- CARGO
-    
+            model = vehicleConfig.model,
+
+            name = vehicleConfig.name,
+
+            capacity = vehicleConfig.capacity,
+
+            element = nil
+
+        },
 
         cargo = {
+
             total = vehicleConfig.capacity,
-            crates = generateCargo(vehicleConfig.capacity)
+
+            crates = generateCargo(
+                vehicleConfig.capacity
+            )
+
         },
 
-    
-        -- TIME
-    
+        pickup = {
+
+            x = pickup.x,
+
+            y = pickup.y,
+
+            z = pickup.z,
+
+            interior = pickup.interior,
+
+            dimension = pickup.dimension
+
+        },
+
+        destination = {
+
+            x = destination.x,
+
+            y = destination.y,
+
+            z = destination.z,
+
+            interior = destination.interior,
+
+            dimension = destination.dimension
+
+        },
 
         startedAt = now,
 
-        expiresAt = now + ShipmentConfig.duration,
+        expiresAt =
+            now + ShipmentConfig.duration
 
-    
-        -- DESTINATION
-    
-
-        pickup = nil,
-
-        destination = nil
     }
-end
--- CHANGE SHIPMENT STATE
-
-function setShipmentState(newState)
-
-    if not ActiveShipment then
-        return false
-    end
-
-    local oldState = ActiveShipment.state
-
-    ActiveShipment.state = newState
-
-    outputDebugString(
-        "[SHIPMENT] #" ..
-        ActiveShipment.id ..
-        " state changed: " ..
-        oldState ..
-        " -> " ..
-        newState
-    )
-
-    triggerClientEvent(
-        root,
-        "shipment:stateChanged",
-        resourceRoot,
-        ActiveShipment.id,
-        newState
-    )
-
-    return true
-end
 
 
--- DESTROY SHIPMENT
+    --------------------------------------------------
+    -- CREATE VEHICLE
+    --------------------------------------------------
 
-function destroyShipment(reason)
+    local vehicle =
+        createVehicle(
+            vehicleConfig.model,
+            pickup.x,
+            pickup.y,
+            pickup.z
+        )
 
-    if not ActiveShipment then
-        return false
-    end
-
-    local shipment = ActiveShipment
-
-
-
-    if isElement(shipment.vehicle.element) then
-        destroyElement(shipment.vehicle.element)
-    end
-
-
-
-    ActiveShipment = nil
-
-
-    -- START GLOBAL COOLDOWN
-
-
-    cooldownEndsAt = getTickCount() + ShipmentConfig.cooldown
-
-    outputDebugString(
-        "[SHIPMENT] Shipment #" ..
-        shipment.id ..
-        " ended. Reason: " ..
-        tostring(reason)
-    )
-
-    return true
-end
-
-if ShipmentConfig.testMode then
-
-    local pickup = ShipmentConfig.testLocations.pickup
-
-    if not pickup then
-        ActiveShipment = nil
-
-        return false,
-            "No pickup location has been set. Use /setshipmentpos pickup first."
-    end
-
-    -------------------------------------------------
-    -- SPAWN VEHICLE
-    -------------------------------------------------
-
-    local vehicle = createVehicle(
-        vehicleConfig.model,
-        pickup.x,
-        pickup.y,
-        pickup.z
-    )
 
     if not vehicle then
+
         ActiveShipment = nil
 
         return false,
             "Failed to create shipment vehicle."
-    end
-
-    -------------------------------------------------
-    -- SET INTERIOR / DIMENSION
-    -------------------------------------------------
-
-    setElementInterior(vehicle, pickup.interior)
-    setElementDimension(vehicle, pickup.dimension)
-
-    -------------------------------------------------
-    -- STORE VEHICLE
-    -------------------------------------------------
-
-    ActiveShipment.vehicle.element = vehicle
-
-    -------------------------------------------------
-    -- STORE PICKUP
-    -------------------------------------------------
-
-    ActiveShipment.pickup = {
-        x = pickup.x,
-        y = pickup.y,
-        z = pickup.z,
-
-        interior = pickup.interior,
-        dimension = pickup.dimension
-    }
-
-    -------------------------------------------------
-    -- STORE DESTINATION
-    -------------------------------------------------
-
-    local destination =
-        ShipmentConfig.testLocations.destination
-
-    if destination then
-
-        ActiveShipment.destination = {
-            x = destination.x,
-            y = destination.y,
-            z = destination.z,
-
-            interior = destination.interior,
-            dimension = destination.dimension
-        }
 
     end
 
-    -------------------------------------------------
-    -- STORE SHIPMENT DATA ON VEHICLE
-    -------------------------------------------------
+
+    --------------------------------------------------
+    -- SET VEHICLE LOCATION
+    --------------------------------------------------
+
+    setElementInterior(
+        vehicle,
+        pickup.interior
+    )
+
+    setElementDimension(
+        vehicle,
+        pickup.dimension
+    )
+
+
+    --------------------------------------------------
+    -- SAVE VEHICLE
+    --------------------------------------------------
+
+    ActiveShipment.vehicle.element =
+        vehicle
+
+
+    --------------------------------------------------
+    -- VEHICLE DATA
+    --------------------------------------------------
 
     setElementData(
         vehicle,
@@ -306,19 +342,211 @@ if ShipmentConfig.testMode then
         true
     )
 
-    -------------------------------------------------
-    -- DEBUG
-    -------------------------------------------------
 
-    outputDebugString(
-        "[SHIPMENT] Created shipment #" ..
-        shipmentID ..
-        " - " ..
-        vehicleConfig.name ..
-        " - " ..
-        vehicleConfig.capacity ..
-        " crates"
+    --------------------------------------------------
+    -- VEHICLE DESTROY EVENT
+    --------------------------------------------------
+
+    addEventHandler(
+        "onElementDestroy",
+        vehicle,
+        onShipmentVehicleDestroy
     )
 
+
+    --------------------------------------------------
+    -- EXPIRATION TIMER
+    --------------------------------------------------
+
+    expirationTimer =
+        setTimer(
+            shipmentExpired,
+            ShipmentConfig.duration,
+            1
+        )
+
+
+    --------------------------------------------------
+    -- DEBUG
+    --------------------------------------------------
+
+    outputDebugString(
+        "[SHIPMENT] ==============================="
+    )
+
+    outputDebugString(
+        "[SHIPMENT] Shipment created."
+    )
+
+    outputDebugString(
+        "[SHIPMENT] ID: "
+        .. ActiveShipment.id
+    )
+
+    outputDebugString(
+        "[SHIPMENT] Vehicle: "
+        .. vehicleConfig.name
+    )
+
+    outputDebugString(
+        "[SHIPMENT] Capacity: "
+        .. vehicleConfig.capacity
+    )
+
+    outputDebugString(
+        "[SHIPMENT] Pickup: "
+        .. pickup.x
+        .. ", "
+        .. pickup.y
+        .. ", "
+        .. pickup.z
+    )
+
+    outputDebugString(
+        "[SHIPMENT] Destination: "
+        .. destination.x
+        .. ", "
+        .. destination.y
+        .. ", "
+        .. destination.z
+    )
+
+    outputDebugString(
+        "[SHIPMENT] ==============================="
+    )
+
+
     return true, ActiveShipment
+
+end
+
+
+--------------------------------------------------
+-- CHANGE STATE
+--------------------------------------------------
+
+function setShipmentState(newState)
+
+    if not ActiveShipment then
+        return false
+    end
+
+
+    local oldState =
+        ActiveShipment.state
+
+
+    ActiveShipment.state =
+        newState
+
+
+    outputDebugString(
+        "[SHIPMENT] Shipment #"
+        .. ActiveShipment.id
+        .. " state: "
+        .. oldState
+        .. " -> "
+        .. newState
+    )
+
+
+    triggerClientEvent(
+        root,
+        "shipment:stateChanged",
+        resourceRoot,
+        ActiveShipment.id,
+        newState
+    )
+
+
+    return true
+
+end
+
+
+--------------------------------------------------
+-- DESTROY SHIPMENT
+--------------------------------------------------
+
+function destroyShipment(reason)
+
+    if not ActiveShipment then
+        return false
+    end
+
+
+    if endingShipment then
+        return false
+    end
+
+
+    endingShipment = true
+
+
+    local shipment =
+        ActiveShipment
+
+
+    --------------------------------------------------
+    -- STOP EXPIRATION TIMER
+    --------------------------------------------------
+
+    if isTimer(expirationTimer) then
+
+        killTimer(
+            expirationTimer
+        )
+
+    end
+
+    expirationTimer = nil
+
+
+    --------------------------------------------------
+    -- DESTROY VEHICLE
+    --------------------------------------------------
+
+    if isElement(
+        shipment.vehicle.element
+    ) then
+
+        destroyElement(
+            shipment.vehicle.element
+        )
+
+    end
+
+
+    --------------------------------------------------
+    -- START GLOBAL COOLDOWN
+    --------------------------------------------------
+
+    cooldownEndsAt =
+        getTickCount()
+        + ShipmentConfig.cooldown
+
+
+    outputDebugString(
+        "[SHIPMENT] Shipment #"
+        .. shipment.id
+        .. " ended."
+    )
+
+    outputDebugString(
+        "[SHIPMENT] Reason: "
+        .. tostring(reason)
+    )
+
+    outputDebugString(
+        "[SHIPMENT] Global cooldown started."
+    )
+
+
+    ActiveShipment = nil
+
+    endingShipment = false
+
+
+    return true
+
 end
