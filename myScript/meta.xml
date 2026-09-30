@@ -2,7 +2,7 @@
     <info
         author="SUPREME CITY"
         name="Illegal Shipment"
-        version="1.0.0"
+        version="1.0"
         type="script"
     />
 
@@ -10,10 +10,8 @@
     <script src="shared/config.lua" type="shared" />
 
     <!-- Server -->
-    <script src="server/test_org.lua" type="server" />
     <script src="server/shipment.lua" type="server" />
-    <script src="server/main.lua" type="server" />
-
+    <script src="server/commands.lua" type="server" />
 
     <!-- Client -->
     <script src="client/main.lua" type="client" />
