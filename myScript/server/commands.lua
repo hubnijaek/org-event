@@ -457,3 +457,83 @@ addCommandHandler(
 
     end
 )
+
+addCommandHandler(
+    "setshipmentnpc",
+    function(player)
+
+        if not ShipmentConfig.testMode then
+
+            outputChatBox(
+                "[SHIPMENT] Test mode is disabled.",
+                player,
+                255, 0, 0
+            )
+
+            return
+
+        end
+
+
+        local x, y, z =
+            getElementPosition(player)
+
+
+        local rotation =
+            getPedRotation(player)
+
+
+        local interior =
+            getElementInterior(player)
+
+
+        local dimension =
+            getElementDimension(player)
+
+
+        ShipmentConfig.npc.x = x
+        ShipmentConfig.npc.y = y
+        ShipmentConfig.npc.z = z
+
+        ShipmentConfig.npc.rotation =
+            rotation
+
+        ShipmentConfig.npc.interior =
+            interior
+
+        ShipmentConfig.npc.dimension =
+            dimension
+
+
+        if isElement(ShipmentNPC) then
+
+            destroyElement(
+                ShipmentNPC
+            )
+
+        end
+
+
+        createShipmentNPC()
+
+
+        outputChatBox(
+            "[SHIPMENT] NPC location saved!",
+            player,
+            0, 255, 0
+        )
+
+
+        outputChatBox(
+            string.format(
+                "[SHIPMENT] X: %.4f | Y: %.4f | Z: %.4f",
+                x,
+                y,
+                z
+            ),
+            player,
+            255, 255, 255
+        )
+
+    end
+)
