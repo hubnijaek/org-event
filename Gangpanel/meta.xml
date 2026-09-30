@@ -1,0 +1,9 @@
+<meta>
+    <info author="xSnake" version="1.0" name="GangPanel" description="Gang system" type="script" />
+	
+    <script src="gang_client.lua" type="client" />
+    <script src="gang_server.lua" type="server" />
+	    <script src="scorefps_server.lua" type="server" />	
+    <script src="scorefps_client.lua" type="client" />
+	<script src="createdatabase.lua" type="server" />
+</meta>
