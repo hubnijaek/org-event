@@ -1,4 +1,5 @@
 ActiveShipment = nil
+ShipmentNPC = nil
 
 local shipmentID = 0
 local cooldownEndsAt = 0
@@ -545,6 +546,84 @@ function destroyShipment(reason)
     ActiveShipment = nil
 
     endingShipment = false
+
+
+    return true
+
+end
+
+function createShipmentNPC()
+
+    if isElement(ShipmentNPC) then
+        destroyElement(ShipmentNPC)
+    end
+
+
+    local npc = ShipmentConfig.npc
+
+
+    if not npc.x
+    or not npc.y
+    or not npc.z then
+
+        outputDebugString(
+            "[SHIPMENT] NPC location has not been set."
+        )
+
+        return false
+
+    end
+
+
+    ShipmentNPC =
+        createPed(
+            npc.model,
+            npc.x,
+            npc.y,
+            npc.z,
+            npc.rotation
+        )
+
+
+    if not ShipmentNPC then
+
+        outputDebugString(
+            "[SHIPMENT] Failed to create shipment NPC."
+        )
+
+        return false
+
+    end
+
+
+    setElementInterior(
+        ShipmentNPC,
+        npc.interior
+    )
+
+
+    setElementDimension(
+        ShipmentNPC,
+        npc.dimension
+    )
+
+
+    setElementFrozen(
+        ShipmentNPC,
+        true
+    )
+
+
+    setElementData(
+        ShipmentNPC,
+        "shipment:npc",
+        true
+    )
+
+
+    outputDebugString(
+        "[SHIPMENT] Shipment NPC created."
+    )
 
 
     return true
