@@ -629,3 +629,141 @@ function createShipmentNPC()
     return true
 
 end
+
+addEvent(
+    "shipment:requestStart",
+    true
+)
+
+addEventHandler(
+    "shipment:requestStart",
+    root,
+    function()
+
+        local player = client
+
+
+        if not isElement(player) then
+            return
+        end
+
+
+        if not isElement(ShipmentNPC) then
+
+            outputChatBox(
+                "[SHIPMENT] The shipment NPC is not available.",
+                player,
+                255, 0, 0
+            )
+
+            return
+
+        end
+
+
+        local px, py, pz =
+            getElementPosition(player)
+
+
+        local nx, ny, nz =
+            getElementPosition(ShipmentNPC)
+
+
+        local distance =
+            getDistanceBetweenPoints3D(
+                px, py, pz,
+                nx, ny, nz
+            )
+
+
+        -- Server-side distance check
+        if distance > 3 then
+
+            outputChatBox(
+                "[SHIPMENT] You are too far from the NPC.",
+                player,
+                255, 100, 100
+            )
+
+            return
+
+        end
+
+
+        local success, result =
+            createShipment()
+
+
+        if not success then
+
+            outputChatBox(
+                "[SHIPMENT] Failed to start shipment.",
+                player,
+                255, 0, 0
+            )
+
+
+            outputChatBox(
+                "[SHIPMENT] "
+                .. tostring(result),
+                player,
+                255, 100, 100
+            )
+
+
+            return
+
+        end
+
+
+        outputChatBox(
+            "[SHIPMENT] Shipment started!",
+            player,
+            0, 255, 0
+        )
+
+
+        outputChatBox(
+            "[SHIPMENT] Vehicle: "
+            .. result.vehicle.name,
+            player,
+            255, 255, 255
+        )
+
+
+        outputChatBox(
+            "[SHIPMENT] Crates: "
+            .. result.cargo.total,
+            player,
+            255, 255, 255
+        )
+
+    end
+)
+
+addEventHandler(
+    "onResourceStart",
+    resourceRoot,
+    function()
+
+        if not ShipmentConfig.testMode then
+            return
+        end
+
+
+        if ShipmentConfig.npc.x
+        and ShipmentConfig.npc.y
+        and ShipmentConfig.npc.z then
+
+            createShipmentNPC()
+
+        else
+
+            outputDebugString(
+                "[SHIPMENT] NPC location is not set."
+            )
+
+        end
+
+    end
+)
