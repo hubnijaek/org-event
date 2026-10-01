@@ -15,4 +15,5 @@
 
     <!-- Client -->
     <script src="client/main.lua" type="client" />
+    <script src="client/crate_damage.lua" type="client" />
 </meta>
