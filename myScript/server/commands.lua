@@ -4,83 +4,101 @@
 
 addCommandHandler(
     "setshipmentpos",
-    function(player, command, locationType)
+    function(player, command, position)
 
-        if not ShipmentConfig.testMode then
+        if not position then
 
             outputChatBox(
-                "[SHIPMENT] Test mode is disabled.",
+                "[SHIPMENT] Usage: /setshipmentpos pickup|crates|destination",
                 player,
-                255, 0, 0
+                255, 200, 0
             )
 
             return
-
-        end
-
-
-        if locationType ~= "pickup"
-        and locationType ~= "destination" then
-
-            outputChatBox(
-                "[SHIPMENT] Usage:",
-                player,
-                255, 255, 255
-            )
-
-            outputChatBox(
-                "/setshipmentpos pickup",
-                player,
-                255, 255, 255
-            )
-
-            outputChatBox(
-                "/setshipmentpos destination",
-                player,
-                255, 255, 255
-            )
-
-            return
-
         end
 
 
         local x, y, z =
             getElementPosition(player)
 
-
         local interior =
             getElementInterior(player)
-
 
         local dimension =
             getElementDimension(player)
 
 
-        ShipmentConfig.testLocations[
-            locationType
-        ] = {
+        if position == "pickup" then
 
-            x = x,
+            ShipmentConfig.testLocations.pickup = {
 
-            y = y,
+                x = x,
+                y = y,
+                z = z,
 
-            z = z,
+                interior = interior,
+                dimension = dimension
 
-            interior = interior,
+            }
 
-            dimension = dimension
+            outputChatBox(
+                "[SHIPMENT] Pickup position saved!",
+                player,
+                0, 255, 0
+            )
 
-        }
+
+        elseif position == "crates" then
+
+            ShipmentConfig.testLocations.crates = {
+
+                x = x,
+                y = y,
+                z = z,
+
+                interior = interior,
+                dimension = dimension
+
+            }
+
+            outputChatBox(
+                "[SHIPMENT] Crate position saved!",
+                player,
+                0, 255, 0
+            )
 
 
-        outputChatBox(
-            "[SHIPMENT] "
-            .. locationType
-            .. " location saved!",
-            player,
-            0, 255, 0
-        )
+        elseif position == "destination" then
+
+            ShipmentConfig.testLocations.destination = {
+
+                x = x,
+                y = y,
+                z = z,
+
+                interior = interior,
+                dimension = dimension
+
+            }
+
+            outputChatBox(
+                "[SHIPMENT] Destination position saved!",
+                player,
+                0, 255, 0
+            )
+
+
+        else
+
+            outputChatBox(
+                "[SHIPMENT] Usage: /setshipmentpos pickup|crates|destination",
+                player,
+                255, 200, 0
+            )
+
+            return
+
+        end
 
 
         outputChatBox(
@@ -91,17 +109,7 @@ addCommandHandler(
                 z
             ),
             player,
-            255, 255, 255
-        )
-
-
-        outputChatBox(
-            "[SHIPMENT] Interior: "
-            .. interior
-            .. " | Dimension: "
-            .. dimension,
-            player,
-            255, 255, 255
+            200, 200, 200
         )
 
     end
@@ -533,6 +541,88 @@ addCommandHandler(
             ),
             player,
             255, 255, 255
+        )
+
+    end
+)
+
+addCommandHandler(
+    "takeovershipment",
+    function(player)
+
+        if not ActiveShipment then
+
+            outputChatBox(
+                "[SHIPMENT] There is no active shipment.",
+                player,
+                255, 100, 100
+            )
+
+            return
+
+        end
+
+
+        if ActiveShipment.takeover
+        and ActiveShipment.takeover.active then
+
+            outputChatBox(
+                "[SHIPMENT] A takeover is already in progress.",
+                player,
+                255, 100, 100
+            )
+
+            return
+
+        end
+
+
+        startShipmentTakeover(
+            player,
+            "TEST_RIVAL"
+        )
+
+    end
+)
+
+
+--------------------------------------------------
+-- CANCEL TAKEOVER
+--------------------------------------------------
+
+addCommandHandler(
+    "canceltakeover",
+    function(player)
+
+        if not ActiveShipment then
+
+            outputChatBox(
+                "[SHIPMENT] There is no active shipment.",
+                player,
+                255, 100, 100
+            )
+
+            return
+
+        end
+
+
+        if not ActiveShipment.takeover
+        or not ActiveShipment.takeover.active then
+
+            outputChatBox(
+                "[SHIPMENT] There is no active takeover.",
+                player,
+                255, 100, 100
+            )
+
+            return
+
+        end
+
+
+        cancelShipmentTakeover(
+            player
         )
 
     end
